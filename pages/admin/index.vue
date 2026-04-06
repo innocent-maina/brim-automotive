@@ -8,8 +8,14 @@
       </p>
     </div>
 
-    <!-- Stats -->
-    <div v-if="stats" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div v-if="!stats" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div
+        v-for="i in 8"
+        :key="i"
+        class="bg-surface-2 rounded-lg h-20 img-shimmer"
+      />
+    </div>
+    <div v-else class="grid grid-cols-2 sm:grid-cols-4 gap-4">
       <div
         v-for="card in statCards"
         :key="card.label"
@@ -25,15 +31,7 @@
       </div>
     </div>
 
-    <div v-else class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <div
-        v-for="i in 8"
-        :key="i"
-        class="bg-surface-2 rounded-lg h-20 img-shimmer"
-      />
-    </div>
-
-    <!-- Pending listings requiring review -->
+    <!-- Pending listings -->
     <div
       class="bg-surface rounded-lg border border-surface-3 shadow-card overflow-hidden"
     >
@@ -43,7 +41,7 @@
         <div class="flex items-center gap-2">
           <h2 class="font-display text-base text-ink">Pending Review</h2>
           <UBadge
-            v-if="pendingListings.length > 0"
+            v-if="pendingListings.length"
             :label="String(pendingListings.length)"
             color="warning"
             variant="soft"
@@ -53,17 +51,14 @@
         <NuxtLink
           to="/admin/listings?status=pending"
           class="text-xs font-body text-brand hover:underline"
+          >View all</NuxtLink
         >
-          View all
-        </NuxtLink>
       </div>
-
       <div v-if="pendingListings.length === 0" class="px-5 py-8 text-center">
         <p class="font-body text-sm text-ink-muted">
           No listings pending review.
         </p>
       </div>
-
       <div v-else>
         <div
           v-for="listing in pendingListings.slice(0, 6)"
@@ -83,7 +78,7 @@
               {{ listing.title }}
             </p>
             <p class="text-xs font-body text-ink-faint">
-              {{ formatPrice(listing.price) }} · by
+              {{ formatPrice(listing.price) }} ·
               {{ listing.profiles?.full_name ?? "Unknown" }}
             </p>
           </div>
@@ -95,18 +90,16 @@
               class="font-body"
               :loading="approvingId === listing.id"
               @click="approveListing(listing.id)"
+              >Approve</UButton
             >
-              Approve
-            </UButton>
             <UButton
               size="xs"
               color="error"
               variant="soft"
               class="font-body"
               @click="rejectListing(listing.id)"
+              >Reject</UButton
             >
-              Reject
-            </UButton>
           </div>
         </div>
       </div>
@@ -133,14 +126,14 @@
         <div
           v-for="inq in recentInquiries.slice(0, 5)"
           :key="inq.id"
-          class="flex items-start gap-3 px-5 py-3 border-b border-surface-3 last:border-0 hover:bg-surface-2 transition-colors"
+          class="flex items-start gap-3 px-5 py-3 border-b border-surface-3 last:border-0"
         >
           <div
             class="w-8 h-8 rounded-full bg-surface-3 flex items-center justify-center shrink-0 mt-0.5"
           >
-            <span class="text-xs font-body font-500 text-ink-muted uppercase">
-              {{ inq.name?.[0] ?? "?" }}
-            </span>
+            <span class="text-xs font-body font-500 text-ink-muted uppercase">{{
+              inq.name?.[0] ?? "?"
+            }}</span>
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-body font-500 text-ink">{{ inq.name }}</p>
@@ -166,23 +159,23 @@ definePageMeta({ layout: "dashboard", middleware: "admin" });
 useSeo({ title: "Admin Overview", noIndex: true });
 
 const { formatPrice } = useListings();
+const { authFetch } = useAuth();
 
-const { data: statsRes } = await useFetch("/api/admin/stats");
-const { data: listingsRes, refresh: refreshListings } = await useFetch(
-  "/api/admin/listings",
-  {
-    query: { status: "pending" },
-  },
-);
-const { data: inquiriesRes } = await useFetch("/api/admin/inquiries");
+const stats = ref<any>(null);
+const pendingListings = ref<any[]>([]);
+const recentInquiries = ref<any[]>([]);
+const approvingId = ref<string | null>(null);
 
-const stats = computed<any>(() => (statsRes.value as any)?.data);
-const pendingListings = computed<any[]>(
-  () => (listingsRes.value as any)?.data ?? [],
-);
-const recentInquiries = computed<any[]>(
-  () => (inquiriesRes.value as any)?.data ?? [],
-);
+onMounted(async () => {
+  const [s, l, i] = await Promise.all([
+    authFetch<any>("/api/admin/stats"),
+    authFetch<any>("/api/admin/listings", { query: { status: "pending" } }),
+    authFetch<any>("/api/admin/inquiries"),
+  ]);
+  stats.value = s?.data;
+  pendingListings.value = l?.data ?? [];
+  recentInquiries.value = i?.data ?? [];
+});
 
 const statCards = computed(() => [
   {
@@ -227,12 +220,17 @@ const statCards = computed(() => [
   },
 ]);
 
-const approvingId = ref<string | null>(null);
+const refreshListings = async () => {
+  const l = await authFetch<any>("/api/admin/listings", {
+    query: { status: "pending" },
+  });
+  pendingListings.value = l?.data ?? [];
+};
 
 const approveListing = async (id: string) => {
   approvingId.value = id;
   try {
-    await $fetch(`/api/listings/${id}`, {
+    await authFetch(`/api/listings/${id}`, {
       method: "PATCH",
       body: { status: "active" },
     });
@@ -243,7 +241,7 @@ const approveListing = async (id: string) => {
 };
 
 const rejectListing = async (id: string) => {
-  await $fetch(`/api/listings/${id}`, {
+  await authFetch(`/api/listings/${id}`, {
     method: "PATCH",
     body: { status: "rejected" },
   });

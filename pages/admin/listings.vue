@@ -10,7 +10,6 @@
       </div>
     </div>
 
-    <!-- Status filter tabs -->
     <div class="flex gap-1 border-b border-surface-3">
       <button
         v-for="tab in tabs"
@@ -38,7 +37,7 @@
       </button>
     </div>
 
-    <div v-if="pending" class="space-y-3">
+    <div v-if="loading" class="space-y-3">
       <div
         v-for="i in 5"
         :key="i"
@@ -72,16 +71,8 @@
             class="w-full h-full object-cover"
           />
         </div>
-
         <div class="flex-1 min-w-0">
-          <NuxtLink
-            v-if="listing.status === 'active'"
-            :to="`/cars/${listing.id}`"
-            class="text-sm font-body font-500 text-ink hover:text-brand transition-colors truncate block"
-          >
-            {{ listing.title }}
-          </NuxtLink>
-          <p v-else class="text-sm font-body font-500 text-ink truncate">
+          <p class="text-sm font-body font-500 text-ink truncate">
             {{ listing.title }}
           </p>
           <div
@@ -89,12 +80,11 @@
           >
             <span>{{ formatPrice(listing.price) }}</span>
             <span>·</span>
-            <span>{{ listing.profiles?.full_name ?? "Unknown seller" }}</span>
+            <span>{{ listing.profiles?.full_name ?? "Unknown" }}</span>
             <span>·</span>
             <span>{{ formatDate(listing.created_at) }}</span>
           </div>
         </div>
-
         <div class="flex items-center gap-2 shrink-0">
           <UBadge
             :label="listing.status"
@@ -103,8 +93,6 @@
             size="xs"
             class="font-body capitalize"
           />
-
-          <!-- Action buttons -->
           <template v-if="listing.status === 'pending'">
             <UButton
               size="xs"
@@ -112,31 +100,26 @@
               variant="soft"
               class="font-body"
               @click="updateStatus(listing.id, 'active')"
+              >Approve</UButton
             >
-              Approve
-            </UButton>
             <UButton
               size="xs"
               color="error"
               variant="soft"
               class="font-body"
               @click="updateStatus(listing.id, 'rejected')"
+              >Reject</UButton
             >
-              Reject
-            </UButton>
           </template>
-
           <template v-else-if="listing.status === 'active'">
             <UButton
               size="xs"
               variant="soft"
               class="font-body"
               @click="updateStatus(listing.id, 'sold')"
+              >Mark Sold</UButton
             >
-              Mark Sold
-            </UButton>
           </template>
-
           <UButton
             size="xs"
             variant="ghost"
@@ -156,20 +139,31 @@ useSeo({ title: "All Listings", noIndex: true });
 
 const route = useRoute();
 const { formatPrice } = useListings();
+const { authFetch } = useAuth();
 
 const activeStatus = ref((route.query.status as string) || "all");
+const allListings = ref<any[]>([]);
+const loading = ref(true);
 
-const { data: res, pending, refresh } = await useFetch("/api/admin/listings");
-const allListings = computed<any[]>(() => (res.value as any)?.data ?? []);
+const loadListings = async () => {
+  loading.value = true;
+  try {
+    const res = await authFetch<any>("/api/admin/listings");
+    allListings.value = res?.data ?? [];
+  } finally {
+    loading.value = false;
+  }
+};
 
-const filtered = computed(() => {
-  if (activeStatus.value === "all") return allListings.value;
-  return allListings.value.filter((l: any) => l.status === activeStatus.value);
-});
+onMounted(loadListings);
 
+const filtered = computed(() =>
+  activeStatus.value === "all"
+    ? allListings.value
+    : allListings.value.filter((l: any) => l.status === activeStatus.value),
+);
 const countByStatus = (s: string) =>
   allListings.value.filter((l: any) => l.status === s).length;
-
 const tabs = computed(() => [
   { label: "All", value: "all", count: allListings.value.length },
   { label: "Pending", value: "pending", count: countByStatus("pending") },
@@ -178,16 +172,13 @@ const tabs = computed(() => [
   { label: "Rejected", value: "rejected", count: countByStatus("rejected") },
 ]);
 
-const statusColor = (status: string) => {
-  const map: Record<string, string> = {
+const statusColor = (s: string) =>
+  ({
     active: "success",
     pending: "warning",
     sold: "neutral",
     rejected: "error",
-  };
-  return map[status] ?? "neutral";
-};
-
+  })[s] ?? "neutral";
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat("en-KE", {
     day: "numeric",
@@ -196,13 +187,13 @@ const formatDate = (iso: string) =>
   }).format(new Date(iso));
 
 const updateStatus = async (id: string, status: string) => {
-  await $fetch(`/api/listings/${id}`, { method: "PATCH", body: { status } });
-  await refresh();
+  await authFetch(`/api/listings/${id}`, { method: "PATCH", body: { status } });
+  await loadListings();
 };
 
 const deleteListing = async (id: string) => {
   if (!confirm("Delete this listing permanently?")) return;
-  await $fetch(`/api/listings/${id}`, { method: "DELETE" });
-  await refresh();
+  await authFetch(`/api/listings/${id}`, { method: "DELETE" });
+  await loadListings();
 };
 </script>

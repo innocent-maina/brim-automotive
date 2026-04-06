@@ -8,19 +8,20 @@ export default defineNuxtConfig({
     "@nuxtjs/supabase",
     "@nuxtjs/sitemap",
     "@nuxtjs/robots",
+    "@vueuse/nuxt",
   ],
 
   // ── Supabase ──────────────────────────────────────────────
+  // No useSsrCookies — session lives in localStorage on the client.
+  // All profile/saved queries use useSupabaseClient() directly.
+  // Server API routes use the service role key which bypasses auth entirely.
   supabase: {
-    url: process.env.SUPABASE_URL,
-    key: process.env.SUPABASE_KEY,
-    // Required for serverSupabaseUser(event) to read session from cookies in server routes
-    useSsrCookies: true,
     redirectOptions: {
       login: "/auth/login",
       callback: "/auth/confirm",
       exclude: [
         "/",
+        "/cars",
         "/cars/*",
         "/articles",
         "/articles/*",
@@ -28,6 +29,9 @@ export default defineNuxtConfig({
         "/privacy",
         "/terms",
         "/about",
+        "/list-your-car",
+        "/auth/register",
+        "/auth/forgot-password",
       ],
     },
   },
@@ -35,12 +39,16 @@ export default defineNuxtConfig({
   // ── Nuxt UI ───────────────────────────────────────────────
   ui: {
     colorMode: false,
+    colors: {
+      primary: "red",
+      neutral: "stone",
+    },
   },
 
   // ── CSS / Fonts ───────────────────────────────────────────
   css: ["~/assets/css/main.css"],
 
-  // ── App Head (global SEO & meta) ──────────────────────────
+  // ── App Head ──────────────────────────────────────────────
   app: {
     head: {
       charset: "utf-8",
@@ -80,16 +88,13 @@ export default defineNuxtConfig({
             "Buy and sell cars in Kenya — verified listings with Market Score pricing.",
         },
         { name: "twitter:image", content: "/og-image.jpg" },
-        { name: "theme-color", content: "#0f172a" },
+        { name: "theme-color", content: "#1a1614" },
       ],
       link: [
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
         { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
         { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
-        {
-          rel: "preconnect",
-          href: "https://fonts.googleapis.com",
-        },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {
           rel: "preconnect",
           href: "https://fonts.gstatic.com",

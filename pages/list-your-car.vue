@@ -1,304 +1,324 @@
 <!-- pages/list-your-car.vue -->
 <template>
-  <div class="container-brim py-10 max-w-2xl">
-    <div class="mb-8">
-      <h1 class="font-display text-3xl text-ink">List Your Car</h1>
-      <p class="font-body text-sm text-ink-muted mt-2">
-        Fill in the details below. BRIM will review your listing and publish it
-        within 24 hours. We'll also show you your Market Score — so you know if
-        your price is competitive.
-      </p>
-    </div>
-
-    <!-- Auth gate -->
-    <div
-      v-if="!isAuthenticated"
-      class="bg-surface-2 rounded-lg border border-surface-3 p-8 text-center"
-    >
-      <UIcon
-        name="i-heroicons-lock-closed"
-        class="w-8 h-8 text-ink-faint mx-auto mb-3"
-      />
-      <p class="font-body font-500 text-ink">Sign in to list your car</p>
-      <p class="font-body text-sm text-ink-muted mt-1">
-        Create a free account to submit your listing.
-      </p>
-      <div class="flex gap-3 justify-center mt-5">
-        <UButton to="/auth/login" variant="outline" class="font-body"
-          >Sign In</UButton
+  <div class="page-wrap">
+    <div class="container-brim py-12 max-w-3xl">
+      <!-- Header -->
+      <div class="mb-10">
+        <div
+          class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-body font-500 mb-4"
+          style="
+            background: var(--color-brand-subtle);
+            color: var(--color-brand);
+          "
         >
-        <UButton
-          to="/auth/register"
-          class="font-body font-400"
-          style="background-color: var(--color-brand); color: white"
-        >
-          Create Account
-        </UButton>
-      </div>
-    </div>
-
-    <!-- Form -->
-    <form v-else class="space-y-8" @submit.prevent="submit">
-      <!-- Images -->
-      <section class="space-y-3">
-        <h2 class="font-display text-lg text-ink">Photos</h2>
-        <ImageUploader v-model="form.images" :max-images="6" />
-      </section>
-
-      <!-- Basic info -->
-      <section class="space-y-4">
-        <h2 class="font-display text-lg text-ink">Car Details</h2>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Make *</label
-            >
-            <USelect
-              v-model="form.make"
-              :items="makeOptions"
-              placeholder="Select make"
-              class="font-body"
-              required
-            />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Model *</label
-            >
-            <UInput
-              v-model="form.model"
-              placeholder="e.g. Fielder, Axio, Premio"
-              class="font-body"
-              required
-            />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Year *</label
-            >
-            <USelect
-              v-model="form.year"
-              :items="yearOptions"
-              placeholder="Year"
-              class="font-body"
-              required
-            />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Colour</label
-            >
-            <UInput
-              v-model="form.color"
-              placeholder="e.g. Pearl White"
-              class="font-body"
-            />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Body Type</label
-            >
-            <USelect
-              v-model="form.body_type"
-              :items="bodyTypeOptions"
-              placeholder="Select type"
-              class="font-body"
-            />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Condition *</label
-            >
-            <USelect
-              v-model="form.condition"
-              :items="conditionOptions"
-              class="font-body"
-              required
-            />
-          </div>
+          <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5" />
+          Free to list
         </div>
-      </section>
+        <h1 class="font-display text-4xl text-ink leading-tight">
+          List Your Car
+        </h1>
+        <p
+          class="font-body text-base text-ink-muted mt-3 max-w-lg leading-relaxed"
+        >
+          Fill in the details below. BRIM reviews every listing before it goes
+          live. You'll also get a
+          <strong class="text-ink">Market Score</strong> — showing buyers
+          whether your price is competitive.
+        </p>
+      </div>
 
-      <!-- Performance -->
-      <section class="space-y-4">
-        <h2 class="font-display text-lg text-ink">Engine & Transmission</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Engine Size (L)</label
-            >
-            <UInput
-              v-model="form.engine_size"
-              type="number"
-              step="0.1"
-              placeholder="e.g. 1.5"
-              class="font-body"
-            />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Transmission *</label
-            >
-            <div class="flex gap-2">
-              <button
-                v-for="t in transmissionOptions"
-                :key="t.value"
-                type="button"
-                class="flex-1 py-2 text-sm font-body rounded-md border transition-colors"
-                :class="
-                  form.transmission === t.value
-                    ? 'border-brand bg-brand-subtle text-brand font-500'
-                    : 'border-surface-3 text-ink-soft hover:border-ink-faint'
-                "
-                @click="form.transmission = t.value"
-              >
-                {{ t.label }}
-              </button>
+      <!-- Auth gate -->
+      <div v-if="!isAuthenticated" class="gate-card">
+        <div class="gate-icon">
+          <UIcon
+            name="i-heroicons-lock-closed"
+            class="w-6 h-6"
+            style="color: var(--color-brand)"
+          />
+        </div>
+        <h2 class="font-display text-xl text-ink mb-1">
+          Sign in to list your car
+        </h2>
+        <p class="font-body text-sm text-ink-muted mb-6">
+          Create a free account to submit your listing in minutes.
+        </p>
+        <div class="flex gap-3">
+          <UButton to="/auth/login" variant="outline" class="font-body"
+            >Sign In</UButton
+          >
+          <UButton
+            to="/auth/register"
+            class="font-body font-500"
+            style="background: var(--color-brand); color: white"
+            >Create Account</UButton
+          >
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form v-else class="form-body" @submit.prevent="submit">
+        <!-- Step 1: Photos -->
+        <div class="form-section">
+          <div class="section-header">
+            <span class="step-badge">1</span>
+            <div>
+              <h2 class="font-display text-xl text-ink">Photos</h2>
+              <p class="font-body text-xs text-ink-muted mt-0.5">
+                Upload up to 6 photos. First one becomes the cover.
+              </p>
             </div>
           </div>
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Fuel Type *</label
-            >
-            <USelect
-              v-model="form.fuel_type"
-              :items="fuelOptions"
-              class="font-body"
-              required
-            />
+          <ImageUploader v-model="form.images" :max-images="6" />
+        </div>
+
+        <!-- Step 2: Car Details -->
+        <div class="form-section">
+          <div class="section-header">
+            <span class="step-badge">2</span>
+            <div>
+              <h2 class="font-display text-xl text-ink">Car Details</h2>
+              <p class="font-body text-xs text-ink-muted mt-0.5">
+                Basic information about the vehicle.
+              </p>
+            </div>
           </div>
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Drive Type</label
-            >
-            <USelect
-              v-model="form.drive_type"
-              :items="driveOptions"
-              class="font-body"
-            />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-              >Mileage (km) *</label
-            >
-            <UInput
-              v-model="form.mileage"
-              type="number"
-              placeholder="e.g. 65000"
-              class="font-body"
-              required
-            />
+
+          <div class="fields-grid">
+            <div class="field-group">
+              <label class="field-label">Make *</label>
+              <USelect
+                v-model="form.make"
+                :items="makeOptions"
+                placeholder="Select make"
+                class="font-body"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Model *</label>
+              <UInput
+                v-model="form.model"
+                placeholder="e.g. Fielder, Axio, Harrier"
+                class="font-body"
+                required
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Year *</label>
+              <USelect
+                v-model="form.year"
+                :items="yearOptions"
+                placeholder="Select year"
+                class="font-body"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Colour</label>
+              <UInput
+                v-model="form.color"
+                placeholder="e.g. Pearl White, Black"
+                class="font-body"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Body Type</label>
+              <USelect
+                v-model="form.body_type"
+                :items="bodyTypeOptions"
+                placeholder="Select type"
+                class="font-body"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Condition *</label>
+              <USelect
+                v-model="form.condition"
+                :items="conditionOptions"
+                class="font-body"
+              />
+            </div>
           </div>
         </div>
-      </section>
 
-      <!-- Pricing -->
-      <section class="space-y-4">
-        <h2 class="font-display text-lg text-ink">Pricing</h2>
-        <div>
-          <label class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-            >Asking Price (KES) *</label
+        <!-- Step 3: Engine & Transmission -->
+        <div class="form-section">
+          <div class="section-header">
+            <span class="step-badge">3</span>
+            <div>
+              <h2 class="font-display text-xl text-ink">
+                Engine & Transmission
+              </h2>
+            </div>
+          </div>
+
+          <div class="fields-grid">
+            <div class="field-group">
+              <label class="field-label">Engine Size (Litres)</label>
+              <UInput
+                v-model="form.engine_size"
+                type="number"
+                step="0.1"
+                placeholder="e.g. 1.5"
+                class="font-body"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Mileage (km) *</label>
+              <UInput
+                v-model="form.mileage"
+                type="number"
+                placeholder="e.g. 65000"
+                class="font-body"
+                required
+              />
+            </div>
+            <div class="field-group col-span-2">
+              <label class="field-label">Transmission *</label>
+              <div class="toggle-group">
+                <button
+                  v-for="t in transmissionOptions"
+                  :key="t.value"
+                  type="button"
+                  class="toggle-btn"
+                  :class="{ active: form.transmission === t.value }"
+                  @click="form.transmission = t.value"
+                >
+                  {{ t.label }}
+                </button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Fuel Type *</label>
+              <USelect
+                v-model="form.fuel_type"
+                :items="fuelOptions"
+                class="font-body"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Drive Type</label>
+              <USelect
+                v-model="form.drive_type"
+                :items="driveOptions"
+                class="font-body"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Pricing -->
+        <div class="form-section">
+          <div class="section-header">
+            <span class="step-badge">4</span>
+            <div>
+              <h2 class="font-display text-xl text-ink">Pricing</h2>
+              <p class="font-body text-xs text-ink-muted mt-0.5">
+                Set your asking price in Kenyan Shillings.
+              </p>
+            </div>
+          </div>
+
+          <div class="field-group max-w-xs">
+            <label class="field-label">Asking Price (KES) *</label>
+            <div class="price-input-wrap">
+              <span class="price-prefix">KES</span>
+              <input
+                v-model="form.price"
+                type="number"
+                placeholder="1,200,000"
+                required
+                class="price-input"
+              />
+            </div>
+          </div>
+
+          <!-- Market Score Preview -->
+          <Transition name="fade">
+            <div
+              v-if="scorePreview"
+              class="score-preview"
+              :class="scorePreview"
+            >
+              <div class="flex items-center gap-2">
+                <UIcon :name="scoreIcon" class="w-4 h-4 shrink-0" />
+                <p class="font-body font-500 text-sm">
+                  Market Score Preview: {{ scoreLabel }}
+                </p>
+              </div>
+              <p class="font-body text-xs mt-1 opacity-80 ml-6">
+                {{ scoreText }}
+              </p>
+            </div>
+          </Transition>
+        </div>
+
+        <!-- Step 5: Description -->
+        <div class="form-section">
+          <div class="section-header">
+            <span class="step-badge">5</span>
+            <div>
+              <h2 class="font-display text-xl text-ink">Description & Title</h2>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="field-group">
+              <label class="field-label">Listing Title *</label>
+              <UInput
+                v-model="form.title"
+                placeholder="e.g. 2016 Toyota Fielder X — Low Mileage"
+                class="font-body"
+                required
+              />
+              <p class="text-xs font-body text-ink-faint mt-1">
+                Make it descriptive — buyers search by title.
+              </p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Description</label>
+              <textarea
+                v-model="form.description"
+                rows="5"
+                placeholder="Service history, modifications, reason for selling, any extras included..."
+                class="brim-textarea"
+              />
+            </div>
+            <div class="field-group max-w-xs">
+              <label class="field-label">Location</label>
+              <UInput
+                v-model="form.location"
+                placeholder="e.g. Nairobi, Westlands"
+                class="font-body"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <UAlert
+          v-if="submitError"
+          color="error"
+          variant="soft"
+          :title="submitError"
+          icon="i-heroicons-exclamation-triangle"
+        />
+
+        <!-- Submit -->
+        <div class="submit-row">
+          <UButton
+            type="submit"
+            :loading="submitting"
+            size="lg"
+            class="font-body font-500 px-10"
+            style="background: var(--color-brand); color: white"
           >
-          <UInput
-            v-model="form.price"
-            type="number"
-            placeholder="e.g. 1200000"
-            class="font-body"
-            required
-          />
-        </div>
-
-        <!-- Live market score preview -->
-        <div
-          v-if="scorePreview"
-          class="p-3 rounded-md border"
-          :class="scorePreviewClass"
-        >
-          <p class="text-xs font-body font-500">Market Score Preview</p>
-          <p class="text-xs font-body mt-0.5 opacity-80">
-            {{ scorePreviewText }}
+            Submit for Review
+          </UButton>
+          <p class="font-body text-xs text-ink-faint">
+            BRIM reviews all listings within 24 hours.
           </p>
         </div>
-      </section>
-
-      <!-- Description -->
-      <section class="space-y-3">
-        <h2 class="font-display text-lg text-ink">Description</h2>
-        <div>
-          <label class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-            >Tell buyers about this car</label
-          >
-          <textarea
-            v-model="form.description"
-            rows="5"
-            placeholder="Service history, modifications, why you're selling..."
-            class="w-full px-3 py-2.5 text-sm font-body bg-surface border border-surface-3 rounded-md focus:outline-none focus:border-brand text-ink placeholder:text-ink-faint resize-none transition-colors"
-          />
-        </div>
-        <div>
-          <label class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-            >Location</label
-          >
-          <UInput
-            v-model="form.location"
-            placeholder="e.g. Nairobi, Westlands"
-            class="font-body"
-          />
-        </div>
-      </section>
-
-      <!-- Listing title -->
-      <section>
-        <label class="block text-xs font-body font-500 text-ink-muted mb-1.5"
-          >Listing Title *</label
-        >
-        <UInput
-          v-model="form.title"
-          placeholder="e.g. 2016 Toyota Fielder X — Low Mileage"
-          class="font-body"
-          required
-        />
-        <p class="text-xs font-body text-ink-faint mt-1">
-          Make it descriptive — buyers search by title.
-        </p>
-      </section>
-
-      <!-- Error -->
-      <UAlert
-        v-if="submitError"
-        color="error"
-        variant="soft"
-        :title="submitError"
-        icon="i-heroicons-exclamation-triangle"
-      />
-
-      <!-- Submit -->
-      <UButton
-        type="submit"
-        block
-        :loading="submitting"
-        class="font-body font-400 py-3"
-        style="background-color: var(--color-brand); color: white"
-      >
-        Submit Listing for Review
-      </UButton>
-
-      <p class="text-xs font-body text-ink-faint text-center">
-        BRIM reviews all listings before publishing. Usually within 24 hours.
-      </p>
-    </form>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -306,17 +326,15 @@
 useSeo({
   title: "List Your Car",
   description:
-    "Sell your car on BRIM Automotive. Get a Market Score to see if your price is competitive. Free to list.",
+    "Sell your car on BRIM Automotive. Get a Market Score to see if your price is competitive.",
 });
 
-const { isAuthenticated } = useAuth();
+const { isAuthenticated, authFetch } = useAuth();
 const router = useRouter();
-
 const submitting = ref(false);
 const submitError = ref("");
 const scorePreview = ref<string | null>(null);
 
-// make, body_type, year use undefined so USelect placeholder shows correctly
 const form = reactive({
   title: "",
   make: undefined as string | undefined,
@@ -336,8 +354,7 @@ const form = reactive({
   images: [] as { url: string; is_primary: boolean }[],
 });
 
-// Compute market score preview from hardcoded reference ranges
-const marketPriceRanges: Record<string, { min: number; max: number }> = {
+const marketRanges: Record<string, { min: number; max: number }> = {
   Toyota_Fielder: { min: 1050000, max: 1350000 },
   Toyota_Axio: { min: 850000, max: 1150000 },
   Toyota_Premio: { min: 900000, max: 1200000 },
@@ -353,7 +370,7 @@ const marketPriceRanges: Record<string, { min: number; max: number }> = {
 watch([() => form.make, () => form.model, () => form.price], () => {
   const key = `${form.make}_${form.model}`;
   const price = parseInt(form.price);
-  const ref = marketPriceRanges[key];
+  const ref = marketRanges[key];
   if (!ref || !price) {
     scorePreview.value = null;
     return;
@@ -363,62 +380,65 @@ watch([() => form.make, () => form.model, () => form.price], () => {
   else scorePreview.value = "fair_price";
 });
 
-const scorePreviewClass = computed(() => {
-  const map: Record<string, string> = {
-    good_deal: "border-green-200 bg-green-50 text-green-800",
-    fair_price: "border-amber-200 bg-amber-50 text-amber-800",
-    overpriced: "border-red-200 bg-red-50 text-red-800",
-  };
-  return scorePreview.value ? map[scorePreview.value] : "";
-});
+const scoreIcon = computed(
+  () =>
+    ({
+      good_deal: "i-heroicons-arrow-trending-down",
+      fair_price: "i-heroicons-check-circle",
+      overpriced: "i-heroicons-arrow-trending-up",
+    })[scorePreview.value ?? ""] ?? "",
+);
 
-const scorePreviewText = computed(() => {
-  const map: Record<string, string> = {
-    good_deal: "Your price looks like a good deal compared to market rates.",
-    fair_price:
-      "Your price is within the expected market range. Good positioning.",
-    overpriced:
-      "Your price is above the typical market rate. Consider adjusting to attract more buyers.",
-  };
-  return scorePreview.value ? map[scorePreview.value] : "";
-});
+const scoreLabel = computed(
+  () =>
+    ({
+      good_deal: "Good Deal",
+      fair_price: "Fair Price",
+      overpriced: "Overpriced",
+    })[scorePreview.value ?? ""] ?? "",
+);
+
+const scoreText = computed(
+  () =>
+    ({
+      good_deal: "Your price is below market rate — buyers will love this.",
+      fair_price: "Your price is within the expected market range.",
+      overpriced:
+        "Your price is above market rate — consider adjusting to attract more buyers.",
+    })[scorePreview.value ?? ""] ?? "",
+);
 
 const submit = async () => {
   submitting.value = true;
   submitError.value = "";
   try {
-    const res = await $fetch<any>("/api/listings", {
+    const res = await authFetch<any>("/api/listings", {
       method: "POST",
       body: {
         ...form,
-        year: parseInt(form.year),
+        year: parseInt(form.year ?? "0"),
         price: parseInt(form.price),
         mileage: parseInt(form.mileage),
         engine_size: form.engine_size ? parseFloat(form.engine_size) : null,
       },
     });
-
     const listingId = res.data?.id;
     if (!listingId) throw new Error("Unexpected response");
-
-    // Upload image URLs to the images table
     for (const img of form.images) {
-      await $fetch(`/api/listings/${listingId}/images`, {
+      await authFetch(`/api/listings/${listingId}/images`, {
         method: "POST",
         body: { url: img.url, is_primary: img.is_primary },
       });
     }
-
     await router.push("/dashboard/listings?submitted=1");
   } catch (e: any) {
     submitError.value =
-      e?.data?.message ?? "Failed to submit listing. Please try again.";
+      e?.data?.message ?? "Failed to submit. Please try again.";
   } finally {
     submitting.value = false;
   }
 };
 
-// Options — Nuxt UI v3: empty string values not allowed in USelect items
 const currentYear = new Date().getFullYear();
 const makeOptions = [
   "Toyota",
@@ -468,3 +488,229 @@ const driveOptions = [
   { label: "AWD", value: "AWD" },
 ];
 </script>
+
+<style scoped>
+.page-wrap {
+  background: var(--color-surface-2);
+  min-height: 100vh;
+}
+
+.gate-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-3);
+  border-radius: 16px;
+  padding: 2.5rem;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+.gate-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--color-brand-subtle);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+}
+
+.form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-3);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: var(--shadow-card);
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-surface-3);
+}
+
+.step-badge {
+  width: 28px;
+  height: 28px;
+  background: var(--color-brand);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .fields-grid {
+    grid-template-columns: 1fr;
+  }
+  .col-span-2 {
+    grid-column: span 1;
+  }
+}
+
+.col-span-2 {
+  grid-column: span 2;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.field-label {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.toggle-group {
+  display: flex;
+  gap: 0.5rem;
+}
+.toggle-btn {
+  flex: 1;
+  padding: 0.625rem 1rem;
+  border: 1.5px solid var(--color-surface-3);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--color-ink-soft);
+  background: var(--color-surface-2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.toggle-btn:hover {
+  border-color: var(--color-ink-faint);
+}
+.toggle-btn.active {
+  border-color: var(--color-brand);
+  background: var(--color-brand-subtle);
+  color: var(--color-brand);
+  font-weight: 500;
+}
+
+.price-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--color-surface-3);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-surface);
+  transition: border-color 0.15s;
+}
+.price-input-wrap:focus-within {
+  border-color: var(--color-brand);
+}
+.price-prefix {
+  padding: 0 0.875rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink-faint);
+  background: var(--color-surface-2);
+  border-right: 1px solid var(--color-surface-3);
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+.price-input {
+  flex: 1;
+  padding: 0 0.875rem;
+  height: 40px;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--color-ink);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+.price-input::placeholder {
+  color: var(--color-ink-faint);
+}
+
+.score-preview {
+  margin-top: 1rem;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  border: 1.5px solid;
+}
+.score-preview.good_deal {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+.score-preview.fair_price {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+.score-preview.overpriced {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.brim-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-surface-3);
+  border-radius: 8px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  line-height: 1.6;
+}
+.brim-textarea:focus {
+  border-color: var(--color-brand);
+}
+.brim-textarea::placeholder {
+  color: var(--color-ink-faint);
+}
+
+.submit-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 0.5rem;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>

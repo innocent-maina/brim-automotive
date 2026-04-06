@@ -1,10 +1,7 @@
 <!-- pages/auth/register.vue -->
 <template>
   <div class="w-full max-w-sm">
-    <div
-      v-if="!success"
-      class="bg-surface rounded-xl border border-surface-3 shadow-card p-8"
-    >
+    <div class="bg-surface rounded-xl border border-surface-3 shadow-card p-8">
       <div class="text-center mb-7">
         <BrimLogo class="justify-center mb-4" />
         <h1 class="font-display text-2xl text-ink">Create Account</h1>
@@ -26,7 +23,6 @@
             required
           />
         </div>
-
         <div>
           <label class="block text-xs font-body font-500 text-ink-muted mb-1.5"
             >Email</label
@@ -40,7 +36,6 @@
             required
           />
         </div>
-
         <div>
           <label class="block text-xs font-body font-500 text-ink-muted mb-1.5"
             >Password</label
@@ -106,29 +101,6 @@
         >
       </p>
     </div>
-
-    <!-- Success state -->
-    <div
-      v-else
-      class="bg-surface rounded-xl border border-surface-3 shadow-card p-8 text-center"
-    >
-      <UIcon
-        name="i-heroicons-envelope"
-        class="w-10 h-10 text-brand mx-auto mb-4"
-      />
-      <h2 class="font-display text-2xl text-ink">Check your email</h2>
-      <p class="font-body text-sm text-ink-muted mt-2 leading-relaxed">
-        We've sent a confirmation link to
-        <strong class="text-ink">{{ email }}</strong
-        >. Click it to activate your account.
-      </p>
-      <NuxtLink
-        to="/auth/login"
-        class="mt-5 inline-block font-body text-sm text-brand hover:underline"
-      >
-        Back to Sign In
-      </NuxtLink>
-    </div>
   </div>
 </template>
 
@@ -136,7 +108,9 @@
 definePageMeta({ layout: "auth" });
 useSeo({ title: "Create Account", noIndex: true });
 
-const { signUp } = useAuth();
+const supabase = useSupabaseClient();
+const { fetchProfile } = useAuth();
+const router = useRouter();
 
 const fullName = ref("");
 const email = ref("");
@@ -144,14 +118,31 @@ const password = ref("");
 const showPassword = ref(false);
 const loading = ref(false);
 const error = ref("");
-const success = ref(false);
 
 const handleRegister = async () => {
   loading.value = true;
   error.value = "";
   try {
-    await signUp(email.value, password.value, fullName.value);
-    success.value = true;
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: email.value,
+      password: password.value,
+      options: { data: { full_name: fullName.value } },
+    });
+
+    if (signUpError) throw signUpError;
+
+    // Update the auto-created profile with the full name
+    if (data.user) {
+      await supabase
+        .from("profiles")
+        .update({ full_name: fullName.value })
+        .eq("id", data.user.id);
+
+      await fetchProfile();
+    }
+
+    // Email confirmation is disabled — push straight to dashboard
+    await router.push("/dashboard");
   } catch (e: any) {
     error.value = e?.message ?? "Registration failed. Please try again.";
   } finally {

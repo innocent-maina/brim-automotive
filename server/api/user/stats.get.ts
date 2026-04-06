@@ -7,19 +7,24 @@ export default defineEventHandler(async (event) => {
   if (!user?.id)
     throw createError({ statusCode: 401, message: "Unauthorized" });
 
-  const [listingsRes, inquiriesRes] = await Promise.all([
-    supabase.from("car_listings").select("id, status").eq("seller_id", user.id),
-    supabase
+  // Fetch seller's listing IDs first
+  const { data: listingRows } = await supabase
+    .from("car_listings")
+    .select("id, status")
+    .eq("seller_id", user.id);
+
+  const listings = listingRows ?? [];
+  const listingIds = listings.map((l: any) => l.id);
+
+  // Fetch inquiries only if there are listings to query against
+  let inquiries: any[] = [];
+  if (listingIds.length > 0) {
+    const { data: inquiryRows } = await supabase
       .from("inquiries")
       .select("id, status")
-      .in(
-        "listing_id",
-        supabase.from("car_listings").select("id").eq("seller_id", user.id),
-      ),
-  ]);
-
-  const listings = listingsRes.data ?? [];
-  const inquiries = inquiriesRes.data ?? [];
+      .in("listing_id", listingIds);
+    inquiries = inquiryRows ?? [];
+  }
 
   return {
     data: {

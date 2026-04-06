@@ -17,12 +17,10 @@
         class="font-body font-400 shrink-0"
         style="background-color: var(--color-brand); color: white"
       >
-        <UIcon name="i-heroicons-plus" class="w-4 h-4" />
-        New Listing
+        <UIcon name="i-heroicons-plus" class="w-4 h-4" /> New Listing
       </UButton>
     </div>
 
-    <!-- Submitted toast -->
     <UAlert
       v-if="submitted"
       color="success"
@@ -32,8 +30,7 @@
       icon="i-heroicons-check-circle"
     />
 
-    <!-- Loading -->
-    <div v-if="pending" class="space-y-3">
+    <div v-if="loading" class="space-y-3">
       <div
         v-for="i in 3"
         :key="i"
@@ -41,7 +38,6 @@
       />
     </div>
 
-    <!-- Empty -->
     <div
       v-else-if="listings.length === 0"
       class="bg-surface rounded-lg border border-surface-3 p-12 text-center shadow-card"
@@ -58,12 +54,10 @@
         to="/list-your-car"
         class="mt-5 font-body font-400"
         style="background-color: var(--color-brand); color: white"
+        >List a Car</UButton
       >
-        List a Car
-      </UButton>
     </div>
 
-    <!-- Listings table -->
     <div
       v-else
       class="bg-surface rounded-lg border border-surface-3 shadow-card overflow-hidden"
@@ -73,7 +67,6 @@
         :key="listing.id"
         class="flex items-center gap-4 px-5 py-4 border-b border-surface-3 last:border-0 hover:bg-surface-2 transition-colors"
       >
-        <!-- Image -->
         <div class="w-16 h-12 rounded bg-surface-2 overflow-hidden shrink-0">
           <img
             v-if="listing.primary_image"
@@ -85,8 +78,6 @@
             <UIcon name="i-heroicons-photo" class="w-5 h-5 text-ink-faint" />
           </div>
         </div>
-
-        <!-- Info -->
         <div class="flex-1 min-w-0">
           <p class="text-sm font-body font-500 text-ink truncate">
             {{ listing.title }}
@@ -99,15 +90,8 @@
             <span class="text-xs font-body text-ink-faint capitalize">{{
               listing.condition
             }}</span>
-            <MarketScoreBadge
-              v-if="listing.market_score"
-              :score="listing.market_score"
-              class="scale-75 origin-left"
-            />
           </div>
         </div>
-
-        <!-- Status + actions -->
         <div class="flex items-center gap-3 shrink-0">
           <UBadge
             :label="listing.status"
@@ -137,7 +121,6 @@
       </div>
     </div>
 
-    <!-- Delete confirm modal -->
     <UModal v-model:open="deleteModal">
       <template #content>
         <div class="p-6">
@@ -145,7 +128,7 @@
           <p class="font-body text-sm text-ink-muted mb-5">
             This will permanently remove
             <strong class="text-ink">{{ deletingListing?.title }}</strong
-            >. This cannot be undone.
+            >.
           </p>
           <div class="flex gap-3 justify-end">
             <UButton
@@ -159,9 +142,8 @@
               :loading="deleting"
               class="font-body"
               @click="doDelete"
+              >Remove</UButton
             >
-              Remove
-            </UButton>
           </div>
         </div>
       </template>
@@ -170,36 +152,41 @@
 </template>
 
 <script setup lang="ts">
-import type { CarListingCard } from "~/types";
-
 definePageMeta({ layout: "dashboard", middleware: "auth" });
 useSeo({ title: "My Listings", noIndex: true });
 
 const route = useRoute();
 const { formatPrice } = useListings();
+const { authFetch } = useAuth();
 
 const submitted = computed(() => route.query.submitted === "1");
-
-const { data: res, pending, refresh } = await useFetch("/api/user/listings");
-const listings = computed<CarListingCard[]>(
-  () => (res.value as any)?.data ?? [],
-);
-
+const listings = ref<any[]>([]);
+const loading = ref(true);
 const deleteModal = ref(false);
-const deletingListing = ref<CarListingCard | null>(null);
+const deletingListing = ref<any>(null);
 const deleting = ref(false);
 
-const statusColor = (status: string) => {
-  const map: Record<string, string> = {
+const load = async () => {
+  loading.value = true;
+  try {
+    const res = await authFetch<any>("/api/user/listings");
+    listings.value = res?.data ?? [];
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(load);
+
+const statusColor = (s: string) =>
+  ({
     active: "success",
     pending: "warning",
     sold: "neutral",
     rejected: "error",
-  };
-  return map[status] ?? "neutral";
-};
+  })[s] ?? "neutral";
 
-const confirmDelete = (listing: CarListingCard) => {
+const confirmDelete = (listing: any) => {
   deletingListing.value = listing;
   deleteModal.value = true;
 };
@@ -208,13 +195,11 @@ const doDelete = async () => {
   if (!deletingListing.value) return;
   deleting.value = true;
   try {
-    await $fetch(`/api/listings/${deletingListing.value.id}`, {
+    await authFetch(`/api/listings/${deletingListing.value.id}`, {
       method: "DELETE",
     });
     deleteModal.value = false;
-    await refresh();
-  } catch (e) {
-    console.error(e);
+    await load();
   } finally {
     deleting.value = false;
   }

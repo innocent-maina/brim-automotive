@@ -8,7 +8,7 @@
       </p>
     </div>
 
-    <div v-if="pending" class="space-y-3">
+    <div v-if="loading" class="space-y-3">
       <div
         v-for="i in 5"
         :key="i"
@@ -38,28 +38,34 @@
             {{ formatDate(u.created_at) }}
           </p>
         </div>
-        <div class="flex items-center gap-2">
-          <UBadge
-            :label="u.role"
-            :color="u.role === 'admin' ? 'error' : 'neutral'"
-            variant="soft"
-            size="xs"
-            class="font-body capitalize"
-          />
-        </div>
+        <UBadge
+          :label="u.role"
+          :color="u.role === 'admin' ? 'error' : 'neutral'"
+          variant="soft"
+          size="xs"
+          class="font-body capitalize"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Profile } from "~/types";
-
 definePageMeta({ layout: "dashboard", middleware: "admin" });
 useSeo({ title: "Users", noIndex: true });
 
-const { data: res, pending } = await useFetch("/api/admin/users");
-const users = computed<Profile[]>(() => (res.value as any)?.data ?? []);
+const { authFetch } = useAuth();
+const users = ref<any[]>([]);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const res = await authFetch<any>("/api/admin/users");
+    users.value = res?.data ?? [];
+  } finally {
+    loading.value = false;
+  }
+});
 
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat("en-KE", {

@@ -1,6 +1,6 @@
 // composables/useAuth.ts
-// All profile data comes from /server/api routes.
-// Cookies are forwarded via useRequestHeaders so SSR calls work correctly.
+// Profile is always fetched directly from Supabase client — never via server API.
+// Server API routes are only used for writes (POST, PATCH, DELETE).
 import type { Profile, UserRole } from "~/types";
 
 export const useAuth = () => {
@@ -16,24 +16,43 @@ export const useAuth = () => {
     () => !!user.value && profile.value?.role !== "guest",
   );
 
+  // Direct Supabase client query — session is in localStorage, always available.
   const fetchProfile = async () => {
-    if (!user.value) {
+    if (!user.value?.id) {
       profile.value = null;
       return;
     }
     profileLoading.value = true;
     try {
-      // useRequestHeaders forwards cookies in SSR context automatically
-      const headers = useRequestHeaders(["cookie"]);
-      const res = await $fetch<{ data: Profile }>("/api/user/profile", {
-        headers,
-      });
-      profile.value = res.data;
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.value.id)
+        .single();
+      if (data) profile.value = data as Profile;
     } catch {
       profile.value = null;
     } finally {
       profileLoading.value = false;
     }
+  };
+
+  // Returns the current access token for passing to server API routes
+  const getAccessToken = async (): Promise<string | null> => {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token ?? null;
+  };
+
+  // Authenticated $fetch — passes Bearer token so server routes can verify user
+  const authFetch = async <T>(url: string, options: any = {}): Promise<T> => {
+    const token = await getAccessToken();
+    return $fetch<T>(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
   };
 
   const signIn = async (email: string, password: string) => {
@@ -42,24 +61,14 @@ export const useAuth = () => {
       password,
     });
     if (error) throw error;
-
-    if (data.user && data.session) {
-      // Set the session explicitly so the client uses the correct auth token
-      await supabase.auth.setSession({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      });
-      // Now query with the authenticated session — RLS will see the correct user
-      const { data: prof, error: profErr } = await supabase
+    if (data.user) {
+      const { data: prof } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", data.user.id)
         .single();
-      if (!profErr && prof) {
-        profile.value = prof as Profile;
-      }
+      if (prof) profile.value = prof as Profile;
     }
-
     return { session: data.session, profile: profile.value };
   };
 
@@ -111,6 +120,8 @@ export const useAuth = () => {
     isAdmin,
     isSeller,
     fetchProfile,
+    getAccessToken,
+    authFetch,
     signIn,
     signUp,
     signOut,

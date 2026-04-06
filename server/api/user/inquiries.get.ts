@@ -7,18 +7,20 @@ export default defineEventHandler(async (event) => {
   if (!user?.id)
     throw createError({ statusCode: 401, message: "Unauthorized" });
 
+  // Get seller's listing IDs first
+  const { data: listingRows } = await supabase
+    .from("car_listings")
+    .select("id")
+    .eq("seller_id", user.id);
+
+  const listingIds = (listingRows ?? []).map((l: any) => l.id);
+
+  if (listingIds.length === 0) return { data: [], error: null };
+
   const { data, error } = await supabase
     .from("inquiries")
-    .select(
-      `
-      *,
-      car_listings ( id, title, make, model, year )
-    `,
-    )
-    .in(
-      "listing_id",
-      supabase.from("car_listings").select("id").eq("seller_id", user.id),
-    )
+    .select(`*, car_listings ( id, title, make, model, year )`)
+    .in("listing_id", listingIds)
     .order("created_at", { ascending: false });
 
   if (error) throw createError({ statusCode: 500, message: error.message });

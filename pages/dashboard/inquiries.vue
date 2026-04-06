@@ -8,7 +8,7 @@
       </p>
     </div>
 
-    <div v-if="pending" class="space-y-3">
+    <div v-if="loading" class="space-y-3">
       <div
         v-for="i in 4"
         :key="i"
@@ -26,7 +26,7 @@
       />
       <p class="font-display text-lg text-ink-soft">No inquiries yet</p>
       <p class="font-body text-sm text-ink-faint mt-1">
-        When buyers contact you about your cars, they'll appear here.
+        When buyers contact you, they'll appear here.
       </p>
     </div>
 
@@ -53,15 +53,17 @@
                   v-if="inquiry.phone"
                   class="text-xs font-body text-ink-muted flex items-center gap-1"
                 >
-                  <UIcon name="i-heroicons-phone" class="w-3 h-3" />
-                  {{ inquiry.phone }}
+                  <UIcon name="i-heroicons-phone" class="w-3 h-3" />{{
+                    inquiry.phone
+                  }}
                 </span>
                 <span
                   v-if="inquiry.email"
                   class="text-xs font-body text-ink-muted flex items-center gap-1"
                 >
-                  <UIcon name="i-heroicons-envelope" class="w-3 h-3" />
-                  {{ inquiry.email }}
+                  <UIcon name="i-heroicons-envelope" class="w-3 h-3" />{{
+                    inquiry.email
+                  }}
                 </span>
               </div>
             </div>
@@ -79,7 +81,6 @@
             </div>
           </div>
 
-          <!-- Listing ref -->
           <div
             v-if="inquiry.car_listings"
             class="text-xs font-body text-ink-faint bg-surface-2 rounded px-2.5 py-1.5 mb-3 inline-flex items-center gap-1.5"
@@ -89,34 +90,31 @@
             {{ inquiry.car_listings.model }}
           </div>
 
-          <!-- Message -->
           <p class="font-body text-sm text-ink-soft leading-relaxed">
             {{ inquiry.message }}
           </p>
 
-          <!-- Reply via WhatsApp -->
           <div class="mt-4 flex items-center gap-3">
             <a
               v-if="inquiry.phone"
-              :href="`https://wa.me/${inquiry.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${inquiry.name}, thank you for your interest!`)}`"
+              :href="`https://wa.me/${inquiry.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Hello ' + inquiry.name + ', thank you for your interest!')}`"
               target="_blank"
               rel="noopener"
-              class="inline-flex items-center gap-1.5 text-xs font-body font-500 px-3 py-1.5 rounded-md transition-opacity hover:opacity-80 text-white"
+              class="inline-flex items-center gap-1.5 text-xs font-body font-500 px-3 py-1.5 rounded-md text-white hover:opacity-80 transition-opacity"
               style="background-color: #25d366"
             >
               <UIcon
                 name="i-heroicons-chat-bubble-left-ellipsis"
                 class="w-3.5 h-3.5"
-              />
-              Reply on WhatsApp
+              />Reply on WhatsApp
             </a>
             <a
               v-if="inquiry.email"
               :href="`mailto:${inquiry.email}?subject=Re: ${inquiry.car_listings?.title ?? 'Your Inquiry'}`"
               class="inline-flex items-center gap-1.5 text-xs font-body text-ink-soft border border-surface-3 px-3 py-1.5 rounded-md hover:border-brand hover:text-brand transition-colors"
             >
-              <UIcon name="i-heroicons-envelope" class="w-3.5 h-3.5" />
-              Reply by Email
+              <UIcon name="i-heroicons-envelope" class="w-3.5 h-3.5" />Reply by
+              Email
             </a>
           </div>
         </div>
@@ -126,19 +124,26 @@
 </template>
 
 <script setup lang="ts">
-import type { Inquiry } from "~/types";
-
 definePageMeta({ layout: "dashboard", middleware: "auth" });
 useSeo({ title: "Inquiries", noIndex: true });
 
-const { data: res, pending } = await useFetch("/api/user/inquiries");
-const inquiries = computed<Inquiry[]>(() => (res.value as any)?.data ?? []);
+const { authFetch } = useAuth();
+const inquiries = ref<any[]>([]);
+const loading = ref(true);
 
-const formatDate = (iso: string) => {
-  return new Intl.DateTimeFormat("en-KE", {
+onMounted(async () => {
+  try {
+    const res = await authFetch<any>("/api/user/inquiries");
+    inquiries.value = res?.data ?? [];
+  } finally {
+    loading.value = false;
+  }
+});
+
+const formatDate = (iso: string) =>
+  new Intl.DateTimeFormat("en-KE", {
     day: "numeric",
     month: "short",
     year: "numeric",
   }).format(new Date(iso));
-};
 </script>

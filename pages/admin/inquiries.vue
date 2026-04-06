@@ -4,11 +4,11 @@
     <div>
       <h1 class="font-display text-2xl text-ink">All Inquiries</h1>
       <p class="font-body text-sm text-ink-muted mt-0.5">
-        {{ inquiries.length }} total inquiries across all listings.
+        {{ inquiries.length }} total inquiries.
       </p>
     </div>
 
-    <div v-if="pending" class="space-y-3">
+    <div v-if="loading" class="space-y-3">
       <div
         v-for="i in 5"
         :key="i"
@@ -49,15 +49,17 @@
                 v-if="inquiry.phone"
                 class="text-xs font-body text-ink-muted flex items-center gap-1"
               >
-                <UIcon name="i-heroicons-phone" class="w-3 h-3" />
-                {{ inquiry.phone }}
+                <UIcon name="i-heroicons-phone" class="w-3 h-3" />{{
+                  inquiry.phone
+                }}
               </span>
               <span
                 v-if="inquiry.email"
                 class="text-xs font-body text-ink-muted flex items-center gap-1"
               >
-                <UIcon name="i-heroicons-envelope" class="w-3 h-3" />
-                {{ inquiry.email }}
+                <UIcon name="i-heroicons-envelope" class="w-3 h-3" />{{
+                  inquiry.email
+                }}
               </span>
             </div>
           </div>
@@ -100,8 +102,7 @@
             <UIcon
               name="i-heroicons-chat-bubble-left-ellipsis"
               class="w-3.5 h-3.5"
-            />
-            Reply on WhatsApp
+            />Reply on WhatsApp
           </a>
           <button
             v-if="inquiry.status === 'new'"
@@ -117,15 +118,23 @@
 </template>
 
 <script setup lang="ts">
-import type { Inquiry } from "~/types";
-
 definePageMeta({ layout: "dashboard", middleware: "admin" });
 useSeo({ title: "Inquiries", noIndex: true });
 
 const supabase = useSupabaseClient();
+const { authFetch } = useAuth();
 
-const { data: res, pending, refresh } = await useFetch("/api/admin/inquiries");
-const inquiries = computed<Inquiry[]>(() => (res.value as any)?.data ?? []);
+const inquiries = ref<any[]>([]);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const res = await authFetch<any>("/api/admin/inquiries");
+    inquiries.value = res?.data ?? [];
+  } finally {
+    loading.value = false;
+  }
+});
 
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat("en-KE", {
@@ -136,6 +145,7 @@ const formatDate = (iso: string) =>
 
 const markRead = async (id: string) => {
   await supabase.from("inquiries").update({ status: "read" }).eq("id", id);
-  await refresh();
+  const inq = inquiries.value.find((i: any) => i.id === id);
+  if (inq) inq.status = "read";
 };
 </script>

@@ -1,41 +1,39 @@
 // composables/useSavedCars.ts
-// All calls go through /server/api — cookies forwarded for SSR compatibility.
 export const useSavedCars = () => {
+  const supabase = useSupabaseClient();
   const user = useSupabaseUser();
   const savedIds = useState<string[]>("saved:ids", () => []);
 
   const isSaved = (listingId: string) => savedIds.value.includes(listingId);
 
   const fetchSavedIds = async () => {
-    if (!user.value) return;
+    if (!user.value?.id) return;
     try {
-      const headers = useRequestHeaders(["cookie"]);
-      const res = await $fetch<{ data: string[] }>("/api/user/saved-ids", {
-        headers,
-      });
-      if (res.data) savedIds.value = res.data;
+      const { data } = await supabase
+        .from("saved_cars")
+        .select("listing_id")
+        .eq("user_id", user.value.id);
+      if (data) savedIds.value = data.map((r: any) => r.listing_id);
     } catch {}
   };
 
   const toggleSaved = async (listingId: string) => {
-    if (!user.value) {
+    if (!user.value?.id) {
       await navigateTo("/auth/login");
       return;
     }
-    const headers = useRequestHeaders(["cookie"]);
     if (isSaved(listingId)) {
       savedIds.value = savedIds.value.filter((id) => id !== listingId);
-      await $fetch(`/api/user/saved/${listingId}`, {
-        method: "DELETE",
-        headers,
-      });
+      await supabase
+        .from("saved_cars")
+        .delete()
+        .eq("user_id", user.value.id)
+        .eq("listing_id", listingId);
     } else {
       savedIds.value = [...savedIds.value, listingId];
-      await $fetch("/api/user/saved", {
-        method: "POST",
-        body: { listing_id: listingId },
-        headers,
-      });
+      await supabase
+        .from("saved_cars")
+        .insert({ user_id: user.value.id, listing_id: listingId });
     }
   };
 

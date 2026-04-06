@@ -104,7 +104,7 @@
 definePageMeta({ layout: "dashboard", middleware: "auth" });
 useSeo({ title: "Profile", noIndex: true });
 
-const { user, profile, updatePassword } = useAuth();
+const { user, profile, updatePassword, authFetch } = useAuth();
 
 const form = reactive({
   full_name: profile.value?.full_name ?? "",
@@ -127,7 +127,7 @@ const save = async () => {
   success.value = false;
   error.value = "";
   try {
-    await $fetch("/api/user/profile", { method: "PATCH", body: form });
+    await authFetch("/api/user/profile", { method: "PATCH", body: form });
     success.value = true;
   } catch (e: any) {
     error.value = e?.data?.message ?? "Update failed.";

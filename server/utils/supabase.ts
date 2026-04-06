@@ -1,7 +1,9 @@
 // server/utils/supabase.ts
 import { createClient } from "@supabase/supabase-js";
+import { serverSupabaseUser } from "#supabase/server";
 
-// Service-role client — bypasses RLS, used for all server operations
+// Service-role client — bypasses RLS entirely.
+// Used for all server-side DB operations.
 export const useServerSupabase = () => {
   const config = useRuntimeConfig();
   return createClient(
@@ -11,49 +13,27 @@ export const useServerSupabase = () => {
   );
 };
 
-// Get authenticated user by reading the Supabase access token from cookies.
-// @nuxtjs/supabase stores the token in a cookie named sb-<ref>-auth-token
-// We extract the JWT and verify it with the service role client.
+// Read authenticated user from the request.
+// Works for browser-initiated requests (button clicks, form submits)
+// where the browser sends the Supabase auth cookie automatically.
+// NOT reliable for $fetch calls during SSR — avoid those entirely.
 export const getServerUser = async (event: any) => {
   try {
-    // First try the #supabase/server approach
-    const { serverSupabaseUser } = await import("#supabase/server");
     const user = await serverSupabaseUser(event);
     if (user?.id) return user;
   } catch {}
 
-  // Fallback: manually parse the auth cookie and verify via getUser()
+  // Fallback: read JWT from Authorization header (sent by $fetch on client)
   try {
     const supabase = useServerSupabase();
-    const cookies = parseCookies(event);
-
-    // Find the Supabase auth cookie — it matches sb-*-auth-token
-    const authCookieKey = Object.keys(cookies).find(
-      (k) => k.startsWith("sb-") && k.endsWith("-auth-token"),
-    );
-    if (!authCookieKey) return null;
-
-    let tokenData: any;
-    try {
-      tokenData = JSON.parse(decodeURIComponent(cookies[authCookieKey]));
-    } catch {
-      return null;
-    }
-
-    // The cookie value is [access_token, refresh_token] array or an object
-    const accessToken = Array.isArray(tokenData)
-      ? tokenData[0]
-      : tokenData?.access_token;
-
-    if (!accessToken) return null;
-
+    const authHeader = getRequestHeader(event, "authorization") ?? "";
+    const token = authHeader.replace("Bearer ", "").trim();
+    if (!token) return null;
     const {
       data: { user },
-      error,
-    } = await supabase.auth.getUser(accessToken);
-    if (error || !user?.id) return null;
-    return user;
-  } catch {
-    return null;
-  }
+    } = await supabase.auth.getUser(token);
+    if (user?.id) return user;
+  } catch {}
+
+  return null;
 };

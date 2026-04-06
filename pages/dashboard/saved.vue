@@ -9,7 +9,7 @@
     </div>
 
     <div
-      v-if="pending"
+      v-if="loading"
       class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"
     >
       <div
@@ -35,9 +35,8 @@
         to="/"
         class="mt-5 font-body font-400"
         style="background-color: var(--color-brand); color: white"
+        >Browse Cars</UButton
       >
-        Browse Cars
-      </UButton>
     </div>
 
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -51,21 +50,25 @@
 </template>
 
 <script setup lang="ts">
-import type { CarListingCard } from "~/types";
-
 definePageMeta({ layout: "dashboard", middleware: "auth" });
 useSeo({ title: "Saved Cars", noIndex: true });
 
 const { savedIds } = useSavedCars();
+const { authFetch } = useAuth();
 
-const { data: res, pending } = await useFetch("/api/listings", {
-  query: computed(() => ({ limit: 50, page: 1 })),
+const allListings = ref<any[]>([]);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const res = await authFetch<any>("/api/listings?limit=100&page=1");
+    allListings.value = res?.data ?? [];
+  } finally {
+    loading.value = false;
+  }
 });
 
-const allListings = computed<CarListingCard[]>(
-  () => (res.value as any)?.data ?? [],
-);
 const savedListings = computed(() =>
-  allListings.value.filter((l) => savedIds.value.includes(l.id)),
+  allListings.value.filter((l: any) => savedIds.value.includes(l.id)),
 );
 </script>

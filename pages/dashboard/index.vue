@@ -8,35 +8,32 @@
       </p>
     </div>
 
-    <!-- Stats -->
-    <div v-if="stats" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-      <div
-        v-for="stat in statCards"
-        :key="stat.label"
-        class="bg-surface rounded-lg border border-surface-3 p-4 shadow-card"
-      >
-        <div class="flex items-center justify-between mb-2">
-          <p class="text-xs font-body text-ink-faint uppercase tracking-wide">
-            {{ stat.label }}
-          </p>
-          <UIcon :name="stat.icon" class="w-4 h-4 text-ink-faint" />
-        </div>
-        <p class="font-display text-2xl text-ink">{{ stat.value }}</p>
-        <p v-if="stat.note" class="text-xs font-body text-ink-faint mt-1">
-          {{ stat.note }}
-        </p>
-      </div>
-    </div>
-
-    <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+    <div v-if="!stats" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
       <div
         v-for="i in 6"
         :key="i"
         class="bg-surface-2 rounded-lg h-24 img-shimmer"
       />
     </div>
+    <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div
+        v-for="card in statCards"
+        :key="card.label"
+        class="bg-surface rounded-lg border border-surface-3 p-4 shadow-card"
+      >
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-body text-ink-faint uppercase tracking-wide">
+            {{ card.label }}
+          </p>
+          <UIcon :name="card.icon" class="w-4 h-4 text-ink-faint" />
+        </div>
+        <p class="font-display text-2xl text-ink">{{ card.value }}</p>
+        <p v-if="card.note" class="text-xs font-body text-ink-faint mt-1">
+          {{ card.note }}
+        </p>
+      </div>
+    </div>
 
-    <!-- Quick actions -->
     <div class="bg-surface rounded-lg border border-surface-3 p-5 shadow-card">
       <h2 class="font-display text-base text-ink mb-4">Quick Actions</h2>
       <div class="flex flex-wrap gap-3">
@@ -46,8 +43,7 @@
           class="font-body font-400"
           style="background-color: var(--color-brand); color: white"
         >
-          <UIcon name="i-heroicons-plus" class="w-4 h-4" />
-          List a New Car
+          <UIcon name="i-heroicons-plus" class="w-4 h-4" /> List a New Car
         </UButton>
         <UButton
           to="/dashboard/listings"
@@ -55,8 +51,7 @@
           size="sm"
           class="font-body"
         >
-          <UIcon name="i-heroicons-tag" class="w-4 h-4" />
-          View My Listings
+          <UIcon name="i-heroicons-tag" class="w-4 h-4" /> View My Listings
         </UButton>
         <UButton
           to="/dashboard/inquiries"
@@ -76,7 +71,6 @@
       </div>
     </div>
 
-    <!-- Recent listings -->
     <div
       class="bg-surface rounded-lg border border-surface-3 shadow-card overflow-hidden"
     >
@@ -87,9 +81,8 @@
         <NuxtLink
           to="/dashboard/listings"
           class="text-xs font-body text-brand hover:underline"
+          >View all</NuxtLink
         >
-          View all
-        </NuxtLink>
       </div>
       <div v-if="listings.length > 0">
         <div
@@ -131,9 +124,8 @@
           variant="ghost"
           size="sm"
           class="mt-2 font-body text-brand"
+          >List your first car</UButton
         >
-          List your first car
-        </UButton>
       </div>
     </div>
   </div>
@@ -143,14 +135,20 @@
 definePageMeta({ layout: "dashboard", middleware: "auth" });
 useSeo({ title: "Dashboard", noIndex: true });
 
-const { profile } = useAuth();
+const { profile, authFetch } = useAuth();
 const { formatPrice } = useListings();
 
-const { data: statsRes } = await useFetch("/api/user/stats");
-const { data: listingsRes } = await useFetch("/api/user/listings");
+const stats = ref<any>(null);
+const listings = ref<any[]>([]);
 
-const stats = computed<any>(() => (statsRes.value as any)?.data);
-const listings = computed<any[]>(() => (listingsRes.value as any)?.data ?? []);
+onMounted(async () => {
+  const [s, l] = await Promise.all([
+    authFetch<any>("/api/user/stats"),
+    authFetch<any>("/api/user/listings"),
+  ]);
+  stats.value = s?.data;
+  listings.value = l?.data ?? [];
+});
 
 const statCards = computed(() => [
   {
@@ -191,13 +189,11 @@ const statCards = computed(() => [
   },
 ]);
 
-const statusColor = (status: string) => {
-  const map: Record<string, string> = {
+const statusColor = (s: string) =>
+  ({
     active: "success",
     pending: "warning",
     sold: "neutral",
     rejected: "error",
-  };
-  return map[status] ?? "neutral";
-};
+  })[s] ?? "neutral";
 </script>
