@@ -1,0 +1,19 @@
+# Nuxt
+.nuxt/
+.output/
+dist/
+.vercel/
+
+# Env
+# .env
+!.env.example
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

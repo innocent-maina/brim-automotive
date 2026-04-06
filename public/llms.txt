@@ -1,0 +1,25 @@
+# BRIM Automotive
+> Buy and sell cars in Kenya. Verified listings with Market Score pricing from Roysambu, Nairobi.
+
+BRIM Automotive is an online car marketplace based in Roysambu, Nairobi, Kenya. We help buyers find fairly-priced vehicles and sellers reach more customers.
+
+## Features
+- Browse car listings from trusted sellers
+- Market Score: see if a car is a Good Deal, Fair Price, or Overpriced before you buy
+- Compare up to 3 cars side by side
+- List your car and reach buyers across Nairobi
+- Automotive articles and buying guides
+
+## Contact
+WhatsApp: +254 712 000 001
+Location: Roysambu, Nairobi, Kenya
+
+## Pages
+- /: Car listings homepage with search and filters
+- /cars/[id]: Individual car listing detail
+- /compare: Side-by-side car comparison
+- /articles: Automotive knowledge articles
+- /list-your-car: Submit your car for sale
+- /about: About BRIM Automotive
+- /privacy: Privacy policy
+- /terms: Terms and conditions
